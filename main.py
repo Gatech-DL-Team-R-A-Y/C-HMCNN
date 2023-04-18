@@ -17,7 +17,7 @@ from utils import datasets
 
 from sklearn.impute import SimpleImputer
 from sklearn import preprocessing
-from sklearn.metrics import accuracy_score, hamming_loss, f1_score, jaccard_similarity_score
+from sklearn.metrics import accuracy_score, hamming_loss, f1_score, jaccard_score
 
 import numpy
 
@@ -26,11 +26,13 @@ from sklearn.metrics import f1_score, average_precision_score, precision_recall_
 
 def get_constr_out(x, R):
     """ Given the output of the neural network x returns the output of MCM given the hierarchy constraint expressed in the matrix R """
-    c_out = x.double()
+    # c_out = x.double()
+    c_out = x
     c_out = c_out.unsqueeze(1)
     c_out = c_out.expand(len(x),R.shape[1], R.shape[1])
     R_batch = R.expand(len(x),R.shape[1], R.shape[1])
-    final_out, _ = torch.max(R_batch*c_out.double(), dim = 2)
+    # final_out, _ = torch.max(R_batch*c_out.double(), dim = 2)
+    final_out, _ = torch.max(R_batch*c_out, dim = 2)
     return final_out
 
 
@@ -140,10 +142,13 @@ def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    device = torch.device("cuda:" + str(args.device) if torch.cuda.is_available() else "cpu")
-    if torch.cuda.is_available:
-        pin_memory = True
+    # device = torch.device("cuda:" + str(args.device) if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
+    # if torch.cuda.is_available:
+    #     pin_memory = True
+    if torch.backends.mps.is_available():
+        pin_memory = True
 
     # Load the datasets
     if ('others' in args.dataset):
@@ -167,6 +172,9 @@ def main():
     R = torch.tensor(R)
     #Transpose to get the descendants for each node 
     R = R.transpose(1, 0)
+    ################################ Siyan ################################
+    R = R.type(torch.float32)
+    ################################################################
     R = R.unsqueeze(0).to(device)
 
 
@@ -177,9 +185,9 @@ def main():
     else:
         scaler = preprocessing.StandardScaler().fit(np.concatenate((train.X, val.X)))
         imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean').fit(np.concatenate((train.X, val.X)))
-        val.X, val.Y = torch.tensor(scaler.transform(imp_mean.transform(val.X))).to(device), torch.tensor(val.Y).to(device)
-    train.X, train.Y = torch.tensor(scaler.transform(imp_mean.transform(train.X))).to(device), torch.tensor(train.Y).to(device)        
-    test.X, test.Y = torch.tensor(scaler.transform(imp_mean.transform(test.X))).to(device), torch.tensor(test.Y).to(device)
+        val.X, val.Y = torch.tensor(scaler.transform(imp_mean.transform(val.X)), dtype=torch.float32).to(device), torch.tensor(val.Y, dtype=torch.float32).to(device)
+    train.X, train.Y = torch.tensor(scaler.transform(imp_mean.transform(train.X)), dtype=torch.float32).to(device), torch.tensor(train.Y, dtype=torch.float32).to(device)        
+    test.X, test.Y = torch.tensor(scaler.transform(imp_mean.transform(test.X)), dtype=torch.float32).to(device), torch.tensor(test.Y, dtype=torch.float32).to(device)
 
     #Create loaders 
     train_dataset = [(x, y) for (x, y) in zip(train.X, train.Y)]
@@ -205,6 +213,7 @@ def main():
     # Create the model
     model = ConstrainedFFNNModel(input_dims[data], hidden_dim, output_dims[ontology][data]+num_to_skip, hyperparams, R)
     model.to(device)
+    # print("Model on gpu", next(model.parameters()).is_cuda)
     print("Model on gpu", next(model.parameters()).is_cuda)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = nn.BCELoss()
@@ -223,10 +232,11 @@ def main():
 
             #MCLoss
             constr_output = get_constr_out(output, R)
-            train_output = labels*output.double()
+            # train_output = labels*output.double()
+            train_output = labels*output
             train_output = get_constr_out(train_output, R)
-            train_output = (1-labels)*constr_output.double() + labels*train_output
-
+            # train_output = (1-labels)*constr_output.double() + labels*train_output
+            train_output = (1-labels)*constr_output + labels*train_output
             loss = criterion(train_output[:,train.to_eval], labels[:,train.to_eval]) 
 
             predicted = constr_output.data > 0.5

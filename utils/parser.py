@@ -77,7 +77,10 @@ def parse_arff(arff_file, is_GO=False, is_test=False):
         X = np.array(X)
         Y = np.stack(Y)
 
-    return X, Y, np.array(nx.to_numpy_matrix(g, nodelist=nodes, order=nodes)), nodes, g
+    # import pdb
+    # pdb.set_trace()
+    # order = ','.join(nodes)
+    return X, Y, np.array(nx.to_numpy_matrix(g, nodelist=nodes)), nodes, g
 
 
 def initialize_dataset(name, datasets):

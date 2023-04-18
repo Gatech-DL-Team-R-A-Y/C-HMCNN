@@ -133,7 +133,8 @@ def main():
     torch.backends.cudnn.benchmark = False
 
     # Pick device
-    device = torch.device("cuda:"+str(args.device) if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda:"+str(args.device) if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
     # Load the datasets
     if ('others' in args.dataset):
