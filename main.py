@@ -142,8 +142,8 @@ def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    # device = torch.device("cuda:" + str(args.device) if torch.cuda.is_available() else "cpu")
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    device = torch.device("cuda:" + str(args.device) if torch.cuda.is_available() else "cpu")
+    # device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
     # if torch.cuda.is_available:
     #     pin_memory = True
