@@ -22,6 +22,7 @@ from sklearn.metrics import accuracy_score, hamming_loss, f1_score, jaccard_scor
 import numpy
 
 from sklearn.metrics import f1_score, average_precision_score, precision_recall_curve, roc_auc_score, auc
+from models import AW_CNN
 
 
 def get_constr_out(x, R):
@@ -172,14 +173,17 @@ def main():
 
     # Rescale data and impute missing data
     if ('others' in args.dataset):
-        scaler = preprocessing.StandardScaler().fit((train.X.astype(float)))
+        # scaler = preprocessing.StandardScaler().fit((train.X.astype(float)))
+        print('AW Debug: This is other dataset!')
         imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean').fit((train.X.astype(float)))
     else:
         scaler = preprocessing.StandardScaler().fit(np.concatenate((train.X, val.X)))
         imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean').fit(np.concatenate((train.X, val.X)))
         val.X, val.Y = torch.tensor(scaler.transform(imp_mean.transform(val.X))).to(device), torch.tensor(val.Y).to(device)
-    train.X, train.Y = torch.tensor(scaler.transform(imp_mean.transform(train.X))).to(device), torch.tensor(train.Y).to(device)        
-    test.X, test.Y = torch.tensor(scaler.transform(imp_mean.transform(test.X))).to(device), torch.tensor(test.Y).to(device)
+    # train.X, train.Y = torch.tensor(scaler.transform(imp_mean.transform(train.X))).to(device), torch.tensor(train.Y).to(device)        
+    train.X, train.Y = torch.tensor(imp_mean.transform(train.X)).to(device), torch.tensor(train.Y).to(device)
+    # test.X, test.Y = torch.tensor(scaler.transform(imp_mean.transform(test.X))).to(device), torch.tensor(test.Y).to(device)
+    test.X, test.Y = torch.tensor(imp_mean.transform(test.X)).to(device), torch.tensor(test.Y).to(device)
 
     #Create loaders 
     train_dataset = [(x, y) for (x, y) in zip(train.X, train.Y)]
@@ -203,7 +207,8 @@ def main():
         num_to_skip = 1 
 
     # Create the model
-    model = ConstrainedFFNNModel(input_dims[data], hidden_dim, output_dims[ontology][data]+num_to_skip, hyperparams, R)
+    # model = ConstrainedFFNNModel(input_dims[data], hidden_dim, output_dims[ontology][data]+num_to_skip, hyperparams, R)
+    model = AW_CNN()
     model.to(device)
     print("Model on gpu", next(model.parameters()).is_cuda)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -219,6 +224,7 @@ def main():
         
             # Clear gradients w.r.t. parameters
             optimizer.zero_grad()
+            print('Main AW Debug:', x.shape)
             output = model(x.float())
 
             #MCLoss
