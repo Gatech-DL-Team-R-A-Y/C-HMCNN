@@ -13,10 +13,13 @@ datasets = {
     ),
     'diatomsCNNDebug_others': (
         False,
-        # os.environ['DATA_FOLDER'] + '/HMC_data/others/Diatoms_train.arff',
         '/Users/mengw/Documents/OMSCS/CS7643_DL/Final_project/Diatom_Data/Diatoms_awcnn_debug_train.arff',
-        # os.environ['DATA_FOLDER'] + '/HMC_data/others/Diatoms_test.arff'
         '/Users/mengw/Documents/OMSCS/CS7643_DL/Final_project/Diatom_Data/Diatoms_awcnn_debug_test.arff'
+    ),
+    'diatomsCNN_others': (
+        False,
+        '../Diatom_Data/Diatoms_awcnn_debug_train.arff',
+        '../Diatom_Data/Diatoms_awcnn_debug_test.arff'
     ),
     'imclef07a_others': (
         False,
