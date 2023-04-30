@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+from .helper import get_constr_out
 
 
 class AW_CNN(nn.Module):
-    def __init__(self):
+    def __init__(self, R):
         super(AW_CNN, self).__init__()
         #############################################################################
         # TODO: Initialize the network weights                                      #
@@ -11,7 +12,8 @@ class AW_CNN(nn.Module):
 
         # Take the idea and adaptation of VGG16
 
-        self.number_conv_block = 2
+        self.R = R
+        self.number_conv_block = 3
 
         initial_in_channel = 1
         initial_out_channel = 16
@@ -33,10 +35,12 @@ class AW_CNN(nn.Module):
             in_c, out_c = out_c, 2 * out_c
 
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        linear_size = in_c * 2 ** (2 * (5 - self.number_conv_block))
+        linear_size = 3 * in_c * 2 ** (2 * (8 - self.number_conv_block))
+        # print('AW_debug linear_size', linear_size)
 
         self.fc1 = nn.Linear(linear_size, fc_hidden_size)
-        self.fc2 = nn.Linear(fc_hidden_size, 10)
+        self.fc2 = nn.Linear(fc_hidden_size, 399)
+        self.sigmoid = nn.Sigmoid()
 
         #############################################################################
         #                              END OF YOUR CODE                             #
@@ -51,8 +55,8 @@ class AW_CNN(nn.Module):
         # x = x.unsqueeze(0)
         for i in range(self.number_conv_block):
             for j in range(5):
-                print('Model AW Debug:', x.shape)
                 x = self.conv_blocks[i][j](x)
+                # print('Model AW Debug (i, j):', i, j, x.shape)
             # x = self.conv_blocks[i][0](x)
             # x = self.conv_blocks[i][1](x)
             # x = torch.relu(x)
@@ -61,9 +65,10 @@ class AW_CNN(nn.Module):
         x = torch.flatten(x, start_dim=1)
         x = self.fc1(x)
         x = torch.relu(x)
-        outs = self.fc2(x)
-
-        #############################################################################
-        #                              END OF YOUR CODE                             #
-        #############################################################################
-        return outs
+        x = self.fc2(x)
+        x = self.sigmoid(x)
+        if self.training:
+            constrained_out = x
+        else:
+            constrained_out = get_constr_out(x, self.R)
+        return constrained_out
