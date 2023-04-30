@@ -11,7 +11,7 @@ import os
 import PIL
 import torchvision.transforms as T
 
-data_path = '/Users/mengw/Documents/OMSCS/CS7643_DL/Final_project/Diatom_Data/TIF_images'
+data_path = '../Diatom_Data/TIF_images'
 
 # Skip the root nodes 
 to_skip = ['root', 'GO0003674', 'GO0005575', 'GO0008150']
@@ -82,8 +82,9 @@ def parse_arff(arff_file, is_GO=False, is_test=False):
                 read_data = True
             elif read_data:
                 img_file, label = l.split()
-                img_full_path = os.path.join(data_path, img_file)
+                img_full_path = os.path.join(data_path, str.upper(img_file))
                 if not os.path.exists(img_full_path):
+                    print('AW debug img_full_path not fould:', img_full_path)
                     continue
 
                 image = preprocess(PIL.Image.open(img_full_path), size=(256, 768))
