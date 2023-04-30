@@ -18,8 +18,8 @@ datasets = {
     ),
     'diatomsCNN_others': (
         False,
-        '../Diatom_Data/Diatoms_awcnn_debug_train.arff',
-        '../Diatom_Data/Diatoms_awcnn_debug_test.arff'
+        '../Diatom_Data/Diatoms_awcnn_train.arff',
+        '../Diatom_Data/Diatoms_awcnn_test.arff'
     ),
     'imclef07a_others': (
         False,
