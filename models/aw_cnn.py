@@ -67,8 +67,10 @@ class AW_CNN(nn.Module):
         x = torch.relu(x)
         x = self.fc2(x)
         x = self.sigmoid(x)
-        if self.training:
-            constrained_out = x
-        else:
-            constrained_out = get_constr_out(x, self.R)
-        return constrained_out
+
+        return x
+        # if self.training:
+        #     constrained_out = x
+        # else:
+        #     constrained_out = get_constr_out(x, self.R)
+        # return constrained_out

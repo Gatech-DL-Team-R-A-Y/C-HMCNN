@@ -24,6 +24,7 @@ import numpy
 
 from sklearn.metrics import f1_score, average_precision_score, precision_recall_curve, roc_auc_score, auc
 from models import AW_CNN
+from visualization.viz import draw_loss_acc
 
 
 def get_constr_out(x, R):
@@ -218,9 +219,26 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = nn.BCELoss()
 
+    ############################## Visualization ##################################
+    train_loss_list = []
+    val_loss_list = []
+
+    train_acc_list = []
+    val_acc_list = []
+
+    train_score_list = []
+    val_score_list = []
+    ################################################################
+
     for epoch in range(num_epochs):
 
         model.train()
+
+        total_train = 0.0
+        correct_train = 0.0
+
+        train_score = 0
+        total_train_loss = 0.
 
         for i, (x, labels) in enumerate(train_loader):
 
@@ -259,7 +277,10 @@ def main():
             # print('AW debug', train_output[mask])
             # print('AW debug ------------------------------------------------------')
             loss = criterion(train_output[:,train.to_eval], labels[:,train.to_eval]) 
+
+            ########################### Loss Viz #########################################
             print('AW debug Training loss: ', loss.item())
+            total_train_loss += loss.item()
 
             # predicted = constr_output.data > 0.5
 
@@ -273,40 +294,64 @@ def main():
             # print('AW debug optimizer.step()', i)
             optimizer.step()
 
-    for i, (x,y) in enumerate(test_loader):
+        # model.eval()
+        # constr_output = constr_output.to('cpu')
 
-        print(f'AW debug Test Batch number {i}')
+        # labels = labels.to('cpu')
+        # train_score = average_precision_score(labels[:, train.to_eval], constr_output.data[:, train.to_eval], average='micro')
+        ########## Loss Viz ##############
+        avg_train_loss = total_train_loss / len(train_loader)
+        ##################################
 
-        model.eval()
-                
-        x = x.to(device)
-        y = y.to(device)
+        total_val_loss = 0.
+        for i, (x,y) in enumerate(test_loader):
 
-        with torch.no_grad():
-            constrained_output = model(x.float())
-        # predicted = constrained_output.data > 0.5
-        # Total number of labels
-        # total = y.size(0) * y.size(1)
-        # Total correct predictions
-        # correct = (predicted == y.byte()).sum()
+            print(f'AW debug Test Batch number {i}')
 
-        #Move output and label back to cpu to be processed by sklearn
-        # predicted = predicted.to('cpu')
-        cpu_constrained_output = constrained_output.to('cpu')
-        y = y.to('cpu')
+            model.eval()
+                    
+            x = x.to(device)
+            y = y.to(device)
 
-        if i == 0:
-            # predicted_test = predicted
-            constr_test = cpu_constrained_output
-            y_test = y
-        else:
-            # predicted_test = torch.cat((predicted_test, predicted), dim=0)
-            constr_test = torch.cat((constr_test, cpu_constrained_output), dim=0)
-            y_test = torch.cat((y_test, y), dim =0)
+            with torch.no_grad():
+                # constrained_output = model(x.float())
+                output = model(x.float())
+                constr_output = get_constr_out(output, R)
+                val_output = labels*output.double()
+                val_output = get_constr_out(val_output, R)
+                val_output = (1-labels)*constr_output.double() + labels*val_output
+                loss = criterion(val_output[:, train.to_eval], y[:, train.to_eval].double())
+                total_val_loss += loss.item()
+            # predicted = constrained_output.data > 0.5
+            # Total number of labels
+            # total = y.size(0) * y.size(1)
+            # Total correct predictions
+            # correct = (predicted == y.byte()).sum()
+
+            #Move output and label back to cpu to be processed by sklearn
+            # predicted = predicted.to('cpu')
+            cpu_constrained_output = constr_output.to('cpu')
+            y = y.to('cpu')
+
+            if i == 0:
+                # predicted_test = predicted
+                constr_test = cpu_constrained_output
+                y_test = y
+            else:
+                # predicted_test = torch.cat((predicted_test, predicted), dim=0)
+                constr_test = torch.cat((constr_test, cpu_constrained_output), dim=0)
+                y_test = torch.cat((y_test, y), dim =0)
 
 
-    score = average_precision_score(y_test[:,test.to_eval], constr_test.data[:,test.to_eval], average='micro')
+        score = average_precision_score(y_test[:,test.to_eval], constr_test.data[:,test.to_eval], average='micro')
+        #################### for val loss viz ##########################
+        avg_val_loss = total_val_loss / len(test_loader)
+        
+        train_loss_list.append(avg_train_loss)
+        val_loss_list.append(avg_val_loss)
+        ################################################################
 
+    draw_loss_acc('CNN', 'Diatom', train_loss_list, val_loss_list, 'Loss')
     f = open('results/'+dataset_name+'.csv', 'a')
     f.write(str(seed)+ ',' +str(epoch) + ',' + str(score) + '\n')
     f.close()
