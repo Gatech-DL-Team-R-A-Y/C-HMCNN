@@ -275,12 +275,13 @@ def main():
         for i, (x, y) in enumerate(val_loader):
             x = x.to(device)
             y = y.to(device)
-            if 'fc' in args.model:
-                ######################## fc #############################
-                constrained_output = model(x.float())
-            elif 'transformer' in args.model:
-                ######################## transformer #############################
-                constrained_output = model(x)
+            with torch.no_grad():
+                if 'fc' in args.model:
+                    ######################## fc #############################
+                    constrained_output = model(x.float())
+                elif 'transformer' in args.model:
+                    ######################## transformer #############################
+                    constrained_output = model(x)
 
             ############## BCE Loss for Viz ##############
             # MCLoss
