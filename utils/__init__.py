@@ -13,8 +13,8 @@ datasets = {
     ),
     'diatomsCNNDebug_others': (
         False,
-        '/Users/mengw/Documents/OMSCS/CS7643_DL/Final_project/Diatom_Data/Diatoms_awcnn_debug_train.arff',
-        '/Users/mengw/Documents/OMSCS/CS7643_DL/Final_project/Diatom_Data/Diatoms_awcnn_debug_test.arff'
+        '../Diatom_Data/Diatoms_awcnn_debug_train.arff',
+        '../Diatom_Data/Diatoms_awcnn_debug_test.arff'
     ),
     'diatomsCNN_others': (
         False,

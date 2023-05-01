@@ -120,7 +120,7 @@ def main():
     lrs = {'FUN':lrs_FUN, 'GO':lrs_GO, 'others':lrs_others}
     epochss_FUN = {'cellcycle':106, 'derisi':67, 'eisen':110, 'expr':20, 'gasch1':42, 'gasch2':123, 'seq':13, 'spo':115}
     epochss_GO = {'cellcycle':62, 'derisi':91, 'eisen':123, 'expr':70, 'gasch1':122, 'gasch2':177, 'seq':45, 'spo':103}
-    epochss_others = {'diatoms':474, 'enron':133,'imclef07a':592, 'imclef07d':588, 'diatomsCNNDebug':10, 'diatomsCNN':10}
+    epochss_others = {'diatoms':474, 'enron':133,'imclef07a':592, 'imclef07d':588, 'diatomsCNNDebug':10, 'diatomsCNN':40}
     epochss = {'FUN':epochss_FUN, 'GO':epochss_GO, 'others':epochss_others}
 
     # Set the hyperparameters 
@@ -219,11 +219,12 @@ def main():
     criterion = nn.BCELoss()
 
     for epoch in range(num_epochs):
+
         model.train()
 
         for i, (x, labels) in enumerate(train_loader):
 
-            print('AW debug loop begin', i)
+            print(f'AW debug Epoch {epoch} Training Batch {i}')
 
             x = x.to(device)
             labels = labels.to(device)
@@ -240,14 +241,14 @@ def main():
             train_output = get_constr_out(train_output, R)
             train_output = (1-labels)*constr_output.double() + labels*train_output
 
-            print('AW debug ------------------------------------------------------')
-            mask = torch.logical_or(constr_output < 0, constr_output >= 1)
-            print('AW debug constr_output', constr_output[mask])
-            print('AW debug constr_output', constr_output)
+            # print('AW debug ------------------------------------------------------')
+            # mask = torch.logical_or(constr_output < 0, constr_output >= 1)
+            # print('AW debug constr_output', constr_output[mask])
+            # print('AW debug constr_output', constr_output)
 
-            mask = torch.logical_or(train_output < 0, train_output >= 1)
-            print('AW debug train_output', train_output[mask])
-            print('AW debug ------------------------------------------------------')
+            # mask = torch.logical_or(train_output < 0, train_output >= 1)
+            # print('AW debug train_output', train_output[mask])
+            # print('AW debug ------------------------------------------------------')
             # print('AW debug train_output, labels', train_output, labels)
             # print('AW debug train_output.shape, labels.shape', train_output.shape, labels.shape)
             # print('AW debug ------------------------------------------------------')
@@ -258,44 +259,48 @@ def main():
             # print('AW debug', train_output[mask])
             # print('AW debug ------------------------------------------------------')
             loss = criterion(train_output[:,train.to_eval], labels[:,train.to_eval]) 
+            print('AW debug Training loss: ', loss.item())
 
-            predicted = constr_output.data > 0.5
+            # predicted = constr_output.data > 0.5
 
             # Total number of labels
-            total_train = labels.size(0) * labels.size(1)
+            # total_train = labels.size(0) * labels.size(1)
             # Total correct predictions
-            correct_train = (predicted == labels.byte()).sum()
+            # correct_train = (predicted == labels.byte()).sum()
 
-            print('AW debug backward()', i)
+            # print('AW debug backward()', i)
             loss.backward()
-            print('AW debug optimizer.step()', i)
+            # print('AW debug optimizer.step()', i)
             optimizer.step()
 
     for i, (x,y) in enumerate(test_loader):
+
+        print(f'AW debug Test Batch number {i}')
 
         model.eval()
                 
         x = x.to(device)
         y = y.to(device)
 
-        constrained_output = model(x.float())
-        predicted = constrained_output.data > 0.5
+        with torch.no_grad():
+            constrained_output = model(x.float())
+        # predicted = constrained_output.data > 0.5
         # Total number of labels
-        total = y.size(0) * y.size(1)
+        # total = y.size(0) * y.size(1)
         # Total correct predictions
-        correct = (predicted == y.byte()).sum()
+        # correct = (predicted == y.byte()).sum()
 
         #Move output and label back to cpu to be processed by sklearn
-        predicted = predicted.to('cpu')
+        # predicted = predicted.to('cpu')
         cpu_constrained_output = constrained_output.to('cpu')
         y = y.to('cpu')
 
         if i == 0:
-            predicted_test = predicted
+            # predicted_test = predicted
             constr_test = cpu_constrained_output
             y_test = y
         else:
-            predicted_test = torch.cat((predicted_test, predicted), dim=0)
+            # predicted_test = torch.cat((predicted_test, predicted), dim=0)
             constr_test = torch.cat((constr_test, cpu_constrained_output), dim=0)
             y_test = torch.cat((y_test, y), dim =0)
 
