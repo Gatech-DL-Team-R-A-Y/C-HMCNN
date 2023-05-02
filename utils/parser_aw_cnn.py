@@ -21,6 +21,10 @@ class arff_data():
     def __init__(self, arff_file, is_GO, is_test=False):
         self.X, self.Y, self.A, self.terms, self.g = parse_arff(arff_file=arff_file, is_GO=is_GO, is_test=is_test)
         self.to_eval = [t not in to_skip for t in self.terms]
+        # print("AW Debug arff_data self.to_eval length:", len(self.to_eval))
+        # print("AW Debug arff_data self.to_eval", self.to_eval)
+        # print("AW Debug arff_data self.terms length:", len(self.terms))
+        # print("AW Debug arff_data self.terms", self.terms)
         # print("AW Debug arff_data:", type(self.X), self.X.shape)
         # r_, c_ = np.where(np.isnan(self.X))
         # m = np.nanmean(self.X, axis=0)
@@ -98,7 +102,7 @@ def parse_arff(arff_file, is_GO=False, is_test=False):
         X = np.stack(X)
         Y = np.stack(Y)
     A = np.array(nx.to_numpy_matrix(g, nodelist=nodes))
-    # print('AW debug X, Y, A, nodes:', X.shape, Y.shape, A.shape, len(nodes))
+    print('AW debug X, Y, A, nodes:', X.shape, Y.shape, A.shape, len(nodes))
     return X, Y, A, nodes, g
 
 def initialize_dataset(name, datasets):
