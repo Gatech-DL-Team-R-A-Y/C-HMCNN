@@ -23,6 +23,7 @@ from sklearn.metrics import f1_score, average_precision_score, precision_recall_
 
 from models.Transformer import TransformerModel
 from models.ConstrainedFFNNModel import ConstrainedFFNNModel, get_constr_out
+from models.BertMultiLabelTransformer import BertMultiLabelTransformer
 from visualization.viz import draw_loss_acc
 
 
@@ -177,6 +178,8 @@ def main():
         dropout = hyperparams['dropout']
         model = TransformerModel(input_size, output_size, hidden_size, num_layers, num_heads, dropout, R)
         ########################################################################
+    elif 'bert' in args.model:
+        model = BertMultiLabelTransformer('bert-base-uncased', output_dims[ontology][data]+num_to_skip)
 
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -218,7 +221,7 @@ def main():
             if 'fc' in args.model:
                 ########################### FC #############################################
                 output = model(x.float())
-            elif 'transformer' in args.model:
+            elif 'transformer' or 'bert' in args.model:
                 ########################### Transformer #############################################
                 output = model(x)
                 ########################################################################
@@ -244,7 +247,7 @@ def main():
                 #        = ?
                 ########################### FC #############################################
                 loss = criterion(train_output[:, train.to_eval], labels[:, train.to_eval].double())
-            elif 'transformer' in args.model:
+            elif 'transformer' or 'bert' in args.model:
                 ########################### Transformer #############################################
                 loss = criterion(train_output[:, train.to_eval], labels[:, train.to_eval].double())
             ########################### Loss Viz #########################################
@@ -279,7 +282,7 @@ def main():
                 if 'fc' in args.model:
                     ######################## fc #############################
                     constrained_output = model(x.float())
-                elif 'transformer' in args.model:
+                elif 'transformer' or 'bert' in args.model:
                     ######################## transformer #############################
                     constrained_output = model(x)
 
