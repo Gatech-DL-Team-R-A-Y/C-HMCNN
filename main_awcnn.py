@@ -74,11 +74,11 @@ def main():
     hidden_dims = {'others':hidden_dims_others}
     lrs_FUN = {'cellcycle':1e-4, 'derisi':1e-4, 'eisen':1e-4, 'expr':1e-4, 'gasch1':1e-4, 'gasch2':1e-4, 'seq':1e-4, 'spo':1e-4}
     lrs_GO = {'cellcycle':1e-4, 'derisi':1e-4, 'eisen':1e-4, 'expr':1e-4, 'gasch1':1e-4, 'gasch2':1e-4, 'seq':1e-4, 'spo':1e-4}
-    lrs_others = {'diatoms':1e-5, 'enron':1e-5,'imclef07a':1e-5, 'imclef07d':1e-5, 'diatomsCNNDebug':1e-5, 'diatomsCNN':1e-5}
+    lrs_others = {'diatoms':1e-5, 'enron':1e-5,'imclef07a':1e-5, 'imclef07d':1e-5, 'diatomsCNNDebug':1e-4, 'diatomsCNN':1e-6}
     lrs = {'FUN':lrs_FUN, 'GO':lrs_GO, 'others':lrs_others}
     epochss_FUN = {'cellcycle':106, 'derisi':67, 'eisen':110, 'expr':20, 'gasch1':42, 'gasch2':123, 'seq':13, 'spo':115}
     epochss_GO = {'cellcycle':62, 'derisi':91, 'eisen':123, 'expr':70, 'gasch1':122, 'gasch2':177, 'seq':45, 'spo':103}
-    epochss_others = {'diatoms':474, 'enron':133,'imclef07a':592, 'imclef07d':588, 'diatomsCNNDebug':10, 'diatomsCNN':20}
+    epochss_others = {'diatoms':474, 'enron':133,'imclef07a':592, 'imclef07d':588, 'diatomsCNNDebug':10, 'diatomsCNN':40}
     epochss = {'FUN':epochss_FUN, 'GO':epochss_GO, 'others':epochss_others}
 
     # Set the hyperparameters 
@@ -110,6 +110,9 @@ def main():
     # Load the datasets
     if ('others' in args.dataset):
         train, test = initialize_other_dataset(dataset_name, datasets)
+        print('AW debug ------------------------------------------------------')
+        print('AW debug len(train.X), len(test.X)', len(train.X), len(test.X))
+        print('AW debug ------------------------------------------------------')
         train.to_eval, test.to_eval = torch.tensor(train.to_eval, dtype=torch.uint8),  torch.tensor(test.to_eval, dtype=torch.uint8)
     else:
         train, val, test = initialize_dataset(dataset_name, datasets)
@@ -186,8 +189,8 @@ def main():
     train_loss_list = []
     val_loss_list = []
 
-    train_acc_list = []
-    val_acc_list = []
+    # train_acc_list = []
+    # val_acc_list = []
 
     train_score_list = []
     val_score_list = []
@@ -261,11 +264,11 @@ def main():
             optimizer.step()
 
         # model.eval()
-        # constr_output = constr_output.to('cpu')
+        constr_output = constr_output.to('cpu')
 
-        # labels = labels.to('cpu')
-        # train_score = average_precision_score(labels[:, train.to_eval], constr_output.data[:, train.to_eval], average='micro')
-        ########## Loss Viz ##############
+        labels = labels.to('cpu')
+        ##########  Viz ##############
+        train_score = average_precision_score(labels[:, train.to_eval], constr_output.data[:, train.to_eval], average='micro')
         avg_train_loss = total_train_loss / len(train_loader)
         ##################################
 
@@ -317,9 +320,14 @@ def main():
         
         train_loss_list.append(avg_train_loss)
         val_loss_list.append(avg_val_loss)
+
+        train_score_list.append(train_score)
+        val_score_list.append(score)
         ################################################################
 
     draw_loss_acc(args.model, data, train_loss_list, val_loss_list, 'Loss')
+    draw_loss_acc(args.model, data, train_score_list, val_score_list, 'Score')
+
     f = open('results/'+dataset_name+'.csv', 'a')
     f.write(str(seed)+ ',' +str(epoch) + ',' + str(score) + '\n')
     f.close()
