@@ -31,53 +31,11 @@ def get_constr_out(x, R):
     """ Given the output of the neural network x returns the output of MCM given the hierarchy constraint expressed in the matrix R """
     c_out = x.double()
     c_out = c_out.unsqueeze(1)
-    print('AW debug len(x), R.shape[1]', len(x), R.shape[1])
+    # print('AW debug len(x), R.shape[1]', len(x), R.shape[1])
     c_out = c_out.expand(len(x),R.shape[1], R.shape[1])
     R_batch = R.expand(len(x),R.shape[1], R.shape[1])
     final_out, _ = torch.max(R_batch*c_out.double(), dim = 2)
     return final_out
-
-
-# class ConstrainedFFNNModel(nn.Module):
-#     """ C-HMCNN(h) model - during training it returns the not-constrained output that is then passed to MCLoss """
-#     def __init__(self, input_dim, hidden_dim, output_dim, hyperparams, R):
-#         super(ConstrainedFFNNModel, self).__init__()
-        
-#         self.nb_layers = hyperparams['num_layers']
-#         self.R = R
-        
-#         fc = []
-#         for i in range(self.nb_layers):
-#             if i == 0:
-#                 fc.append(nn.Linear(input_dim, hidden_dim))
-#             elif i == self.nb_layers-1:
-#                 fc.append(nn.Linear(hidden_dim, output_dim))
-#             else:
-#                 fc.append(nn.Linear(hidden_dim, hidden_dim))
-#         self.fc = nn.ModuleList(fc)
-        
-#         self.drop = nn.Dropout(hyperparams['dropout'])
-        
-        
-#         self.sigmoid = nn.Sigmoid()
-#         if hyperparams['non_lin'] == 'tanh':
-#             self.f = nn.Tanh()
-#         else:
-#             self.f = nn.ReLU()
-        
-#     def forward(self, x):
-#         for i in range(self.nb_layers):
-#             if i == self.nb_layers-1:
-#                 x = self.sigmoid(self.fc[i](x))
-#             else:
-#                 x = self.f(self.fc[i](x))
-#                 x = self.drop(x)
-#         if self.training:
-#             constrained_out = x
-#         else:
-#             constrained_out = get_constr_out(x, self.R)
-#         return constrained_out
-
 
 
 def main():
@@ -120,7 +78,7 @@ def main():
     lrs = {'FUN':lrs_FUN, 'GO':lrs_GO, 'others':lrs_others}
     epochss_FUN = {'cellcycle':106, 'derisi':67, 'eisen':110, 'expr':20, 'gasch1':42, 'gasch2':123, 'seq':13, 'spo':115}
     epochss_GO = {'cellcycle':62, 'derisi':91, 'eisen':123, 'expr':70, 'gasch1':122, 'gasch2':177, 'seq':45, 'spo':103}
-    epochss_others = {'diatoms':474, 'enron':133,'imclef07a':592, 'imclef07d':588, 'diatomsCNNDebug':10, 'diatomsCNN':40}
+    epochss_others = {'diatoms':474, 'enron':133,'imclef07a':592, 'imclef07d':588, 'diatomsCNNDebug':10, 'diatomsCNN':20}
     epochss = {'FUN':epochss_FUN, 'GO':epochss_GO, 'others':epochss_others}
 
     # Set the hyperparameters 
