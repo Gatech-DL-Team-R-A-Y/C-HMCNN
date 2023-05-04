@@ -7,6 +7,11 @@ import networkx as nx
 import keras
 from itertools import chain
 
+import os
+import PIL
+import torchvision.transforms as T
+
+data_path = '../Diatom_Data/TIF_images'
 
 # Skip the root nodes 
 to_skip = ['root', 'GO0003674', 'GO0005575', 'GO0008150']
@@ -16,12 +21,28 @@ class arff_data():
     def __init__(self, arff_file, is_GO, is_test=False):
         self.X, self.Y, self.A, self.terms, self.g = parse_arff(arff_file=arff_file, is_GO=is_GO, is_test=is_test)
         self.to_eval = [t not in to_skip for t in self.terms]
-        r_, c_ = np.where(np.isnan(self.X))
-        m = np.nanmean(self.X, axis=0)
-        for i, j in zip(r_, c_):
-            self.X[i,j] = m[j]
+        # print("AW Debug arff_data self.to_eval length:", len(self.to_eval))
+        # print("AW Debug arff_data self.to_eval", self.to_eval)
+        # print("AW Debug arff_data self.terms length:", len(self.terms))
+        # print("AW Debug arff_data self.terms", self.terms)
+        # print("AW Debug arff_data:", type(self.X), self.X.shape)
+        # r_, c_ = np.where(np.isnan(self.X))
+        # m = np.nanmean(self.X, axis=0)
+        # for i, j in zip(r_, c_):
+        #     self.X[i,j] = m[j]
 
+
+def preprocess(img, size=(256, 768)):
+    transform = T.Compose([
+        T.Resize(size),
+        # T.ToTensor(),
+        # T.Normalize(mean=SQUEEZENET_MEAN.tolist(),
+        #             std=SQUEEZENET_STD.tolist()),
+        # T.Lambda(lambda x: x[None]),
+    ])
+    return transform(img)
             
+
 def parse_arff(arff_file, is_GO=False, is_test=False):
     with open(arff_file) as f:
         read_data = False
@@ -64,26 +85,31 @@ def parse_arff(arff_file, is_GO=False, is_test=False):
             elif l.startswith('@DATA'):
                 read_data = True
             elif read_data:
+                img_file, label = l.split()
+                img_full_path = os.path.join(data_path, str.upper(img_file))
+                if not os.path.exists(img_full_path):
+                    print('AW debug img_full_path not fould:', img_full_path)
+                    continue
+
+                image = preprocess(PIL.Image.open(img_full_path), size=(256, 768))
+                X.append(np.array(image)[np.newaxis, :])
+
                 y_ = np.zeros(len(nodes))
-                d_line = l.split('%')[0].strip().split(',')
-                lab = d_line[len(feature_types)].strip()
-                
-                X.append(list(chain(*[feature_types[i](x,i) for i, x in enumerate(d_line[:len(feature_types)])])))
-                
-                for t in lab.split('@'): 
-                    y_[[nodes_idx.get(a) for a in nx.ancestors(g_t, t.replace('/', '.'))]] =1
-                    y_[nodes_idx[t.replace('/', '.')]] = 1
+                y_[[nodes_idx.get(a) for a in nx.ancestors(g_t, label.replace('/', '.'))]] =1
+                y_[nodes_idx[label.replace('/', '.')]] = 1
                 Y.append(y_)
-        X = np.array(X)
+
+        X = np.stack(X)
         Y = np.stack(Y)
-
-    return X, Y, np.array(nx.to_numpy_matrix(g, nodelist=nodes)), nodes, g
-
+    A = np.array(nx.to_numpy_matrix(g, nodelist=nodes))
+    print('AW debug X, Y, A, nodes:', X.shape, Y.shape, A.shape, len(nodes))
+    return X, Y, A, nodes, g
 
 def initialize_dataset(name, datasets):
     is_GO, train, val, test = datasets[name]
     return arff_data(train, is_GO), arff_data(val, is_GO), arff_data(test, is_GO, True)
 
 def initialize_other_dataset(name, datasets):
+    # print('AW_Debug name in initialize_others_dataset def', name)
     is_GO, train, test = datasets[name]
     return arff_data(train, is_GO), arff_data(test, is_GO, True)
