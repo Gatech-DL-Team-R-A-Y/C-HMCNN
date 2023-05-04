@@ -241,7 +241,7 @@ def main():
             # Paper page 4 - (1-y_A) * MCM_A + y_A * max(y_B*h_B)
             train_output = (1-labels) * constr_output.double() + labels * train_output
 
-            if 'fc' in args.model:
+            if 'fc' in args.model or ('lstm' in args.model):
                 # BCE_loss is binary cross entropy loss
                 # BCE_loss = -(1/n) * sum[label[i] * log(output[i]) + (1-label[i]) * log(1-output[i])]
                 # ref: https://juejin.cn/s/binary%20cross%20entropy
