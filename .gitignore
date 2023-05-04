@@ -1,8 +1,0 @@
-*.DS_Store
-*.zip
-weights/*
-results/*.csv
-logs/*/measures*
-logs/*/.txt
-*.pyc
-*.ipynb

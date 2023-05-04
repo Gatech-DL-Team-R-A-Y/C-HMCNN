@@ -26,6 +26,7 @@ from sklearn.metrics import f1_score, average_precision_score, precision_recall_
 from models import AW_CNN, AW_ConstrainedFFNNModel
 from visualization.viz import draw_loss_acc
 
+from models.RNN import LSTMModel
 
 def get_constr_out(x, R):
     """ Given the output of the neural network x returns the output of MCM given the hierarchy constraint expressed in the matrix R """
