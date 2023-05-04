@@ -24,6 +24,7 @@ from sklearn.metrics import f1_score, average_precision_score, precision_recall_
 from models.Transformer import TransformerModel
 from models.ConstrainedFFNNModel import ConstrainedFFNNModel, get_constr_out
 from models.BertMultiLabelTransformer import BertMultiLabelTransformer
+from models.RNN import LSTMModel
 from visualization.viz import draw_loss_acc
 
 
@@ -95,7 +96,8 @@ def main():
     torch.backends.cudnn.benchmark = False
 
     # Pick device
-    device = torch.device("cuda:"+str(args.device) if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda:"+str(args.device) if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
     # Load the datasets
     if ('others' in args.dataset):
@@ -180,6 +182,12 @@ def main():
         ########################################################################
     elif 'bert' in args.model:
         model = BertMultiLabelTransformer('bert-base-uncased', output_dims[ontology][data]+num_to_skip)
+    elif 'lstm' in args.model:
+        input_size = input_dims[data]
+        output_size = output_dims[ontology][data]+num_to_skip
+        hidden_size = args.hidden_dim
+        num_layers = hyperparams['num_layers']
+        model = LSTMModel(input_size, output_size, hidden_size, num_layers, R)
 
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -212,7 +220,8 @@ def main():
         train_score = 0
         total_train_loss = 0.
         for i, (x, labels) in enumerate(train_loader):
-
+            # import pdb
+            # pdb.set_trace()
             x = x.to(device)
             labels = labels.to(device)
 
@@ -236,7 +245,7 @@ def main():
             # Paper page 4 - (1-y_A) * MCM_A + y_A * max(y_B*h_B)
             train_output = (1-labels) * constr_output.double() + labels * train_output
 
-            if 'fc' in args.model:
+            if 'fc' in args.model or ('lstm' in args.model):
                 # BCE_loss is binary cross entropy loss
                 # BCE_loss = -(1/n) * sum[label[i] * log(output[i]) + (1-label[i]) * log(1-output[i])]
                 # ref: https://juejin.cn/s/binary%20cross%20entropy
@@ -279,7 +288,7 @@ def main():
             x = x.to(device)
             y = y.to(device)
             with torch.no_grad():
-                if 'fc' in args.model:
+                if ('fc' in args.model) or ('lstm' in args.model):
                     ######################## fc #############################
                     constrained_output = model(x.float())
                 elif 'transformer' or 'bert' in args.model:

@@ -1,28 +1,17 @@
-"""
-This code was adapted from https://github.com/lucamasera/AWX
-"""
-
+import os
+import importlib
+os.environ["DATA_FOLDER"] = "./"
 import numpy as np
 import networkx as nx
 import keras
 from itertools import chain
+from utils import datasets
+from collections import OrderedDict
+import matplotlib.pyplot as plt
+import pandas as pd
 
 
-# Skip the root nodes 
-to_skip = ['root', 'GO0003674', 'GO0005575', 'GO0008150']
-
-
-class arff_data():
-    def __init__(self, arff_file, is_GO, is_test=False):
-        self.X, self.Y, self.A, self.terms, self.g = parse_arff(arff_file=arff_file, is_GO=is_GO, is_test=is_test)
-        self.to_eval = [t not in to_skip for t in self.terms]
-        r_, c_ = np.where(np.isnan(self.X))
-        m = np.nanmean(self.X, axis=0)
-        for i, j in zip(r_, c_):
-            self.X[i,j] = m[j]
-
-            
-def parse_arff(arff_file, is_GO=False, is_test=False):
+def parse_arff(arff_file, distribution_dictionary, is_GO=False, is_test=False):
     with open(arff_file) as f:
         read_data = False
         X = []
@@ -71,6 +60,7 @@ def parse_arff(arff_file, is_GO=False, is_test=False):
                 X.append(list(chain(*[feature_types[i](x,i) for i, x in enumerate(d_line[:len(feature_types)])])))
                 
                 for t in lab.split('@'): 
+                    update_distribution_dict(distribution_dictionary, t)
                     y_[[nodes_idx.get(a) for a in nx.ancestors(g_t, t.replace('/', '.'))]] =1
                     y_[nodes_idx[t.replace('/', '.')]] = 1
                 Y.append(y_)
@@ -80,10 +70,46 @@ def parse_arff(arff_file, is_GO=False, is_test=False):
     return X, Y, np.array(nx.to_numpy_matrix(g, nodelist=nodes)), nodes, g
 
 
-def initialize_dataset(name, datasets):
-    is_GO, train, val, test = datasets[name]
-    return arff_data(train, is_GO), arff_data(val, is_GO), arff_data(test, is_GO, True)
-
-def initialize_other_dataset(name, datasets):
+def initialize_other_dataset(name, datasets, distribution_dictionary):
     is_GO, train, test = datasets[name]
-    return arff_data(train, is_GO), arff_data(test, is_GO, True)
+    return parse_arff(train, distribution_dictionary, is_GO), parse_arff(test, distribution_dictionary, is_GO, True)
+
+def update_distribution_dict(distribution_dictionary, t):
+    label = None
+    level1 = None
+    level2 = None
+    if len(t.split("/")) == 3:
+        level1 = str(3)
+    else:
+        level1 = t.split("/")[0]
+    
+    if len(t.split("/")) >= 2:
+        level2 = t.split("/")[-1]
+    
+    if level2 is None:
+        label = level1
+    else:
+        label = level1 + "." + level2
+
+    if label in distribution_dictionary:
+        distribution_dictionary[label] += 1
+    else:
+        distribution_dictionary[label] = 1
+    
+
+distribution_dictionary = {}
+
+initialize_other_dataset("enron_others", datasets, distribution_dictionary)
+
+ordered_distribution_dict = OrderedDict(sorted(distribution_dictionary.items()))
+
+plt.xticks(rotation=90)
+plt.bar(ordered_distribution_dict.keys(), ordered_distribution_dict.values())
+plt.show()
+
+
+# Convert the dictionary to a Pandas DataFrame
+df = pd.DataFrame(list(ordered_distribution_dict.items()), columns=['key', 'value'])
+
+# Write the DataFrame to an Excel file
+df.to_excel('enron_distribution.xlsx', index=False)
