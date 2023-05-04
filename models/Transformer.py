@@ -42,11 +42,12 @@ class TransformerModel(nn.Module):
         outputs = self.activation(logits)
 
         # Add MCM constraints
-        if self.training:
-            constrained_out = outputs
-        else:
-            constrained_out = get_constr_out(outputs, self.R)
-        return constrained_out
+        # if self.training:
+        #     constrained_out = outputs
+        # else:
+        #     constrained_out = get_constr_out(outputs, self.R)
+        # return constrained_out
+        return outputs
 
 
 def get_constr_out(x, R):

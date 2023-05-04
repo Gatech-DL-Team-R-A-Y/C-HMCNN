@@ -77,3 +77,15 @@ export ZONE="us-west1-b"
 export INSTANCE_NAME="cs7643-fp"
 gcloud compute instances create $INSTANCE_NAME   --zone=$ZONE   --image-family=$IMAGE_FAMILY   --image-project=deeplearning-platform-release   --maintenance-policy=TERMINATE --machine-type=n1-standard-4  --accelerator="type=nvidia-tesla-t4,count=1" --boot-disk-size=100GB  --metadata="install-nvidia-driver=True"
 ```
+
+
+## Train C-HMCNN (Modified version from branch dev-siyan-gcp)
+for fc model
+```
+python train.py --model fc --dataset enrontext_others --batch_size 4 --lr 1e-5 --dropout 0.7 --hidden_dim 1000 --num_layers 3 --weight_decay 1e-5 --non_lin 'relu' --num_epochs 10 
+```
+
+for transformer model
+```
+python train.py --model transformer --dataset enrontext_others --batch_size 4 --lr 1e-5 --dropout 0.7 --hidden_dim 1000 --num_layers 3 --weight_decay 1e-5 --non_lin 'relu' --num_epochs 10
+```

@@ -23,6 +23,7 @@ from sklearn.metrics import f1_score, average_precision_score, precision_recall_
 
 from models.Transformer import TransformerModel
 from models.ConstrainedFFNNModel import ConstrainedFFNNModel, get_constr_out
+from models.BertMultiLabelTransformer import BertMultiLabelTransformer
 from models.RNN import LSTMModel
 from visualization.viz import draw_loss_acc
 
@@ -179,6 +180,8 @@ def main():
         dropout = hyperparams['dropout']
         model = TransformerModel(input_size, output_size, hidden_size, num_layers, num_heads, dropout, R)
         ########################################################################
+    elif 'bert' in args.model:
+        model = BertMultiLabelTransformer('bert-base-uncased', output_dims[ontology][data]+num_to_skip)
     elif 'lstm' in args.model:
         input_size = input_dims[data]
         output_size = output_dims[ontology][data]+num_to_skip
@@ -224,10 +227,10 @@ def main():
 
             # Clear gradients w.r.t. parameters
             optimizer.zero_grad()
-            if 'fc' in args.model or ('lstm' in args.model):
+            if 'fc' in args.model:
                 ########################### FC #############################################
                 output = model(x.float())
-            elif 'transformer' in args.model:
+            elif 'transformer' or 'bert' in args.model:
                 ########################### Transformer #############################################
                 output = model(x)
                 ########################################################################
@@ -253,7 +256,7 @@ def main():
                 #        = ?
                 ########################### FC #############################################
                 loss = criterion(train_output[:, train.to_eval], labels[:, train.to_eval].double())
-            elif 'transformer' in args.model:
+            elif 'transformer' or 'bert' in args.model:
                 ########################### Transformer #############################################
                 loss = criterion(train_output[:, train.to_eval], labels[:, train.to_eval].double())
             ########################### Loss Viz #########################################
@@ -284,12 +287,13 @@ def main():
         for i, (x, y) in enumerate(val_loader):
             x = x.to(device)
             y = y.to(device)
-            if ('fc' in args.model) or ('lstm' in args.model):
-                ######################## fc #############################
-                constrained_output = model(x.float())
-            elif 'transformer' in args.model:
-                ######################## transformer #############################
-                constrained_output = model(x)
+            with torch.no_grad():
+                if ('fc' in args.model) or ('lstm' in args.model):
+                    ######################## fc #############################
+                    constrained_output = model(x.float())
+                elif 'transformer' or 'bert' in args.model:
+                    ######################## transformer #############################
+                    constrained_output = model(x)
 
             ############## BCE Loss for Viz ##############
             # MCLoss

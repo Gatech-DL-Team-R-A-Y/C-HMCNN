@@ -37,11 +37,12 @@ class ConstrainedFFNNModel(nn.Module):
                 x = self.f(self.fc[i](x))
                 x = self.drop(x)
 
-        if self.training:
-            constrained_out = x
-        else:
-            constrained_out = get_constr_out(x, self.R)
-        return constrained_out
+        # if self.training:
+        #     constrained_out = x
+        # else:
+        #     constrained_out = get_constr_out(x, self.R)
+        # return constrained_out
+        return x
 
 
 def get_constr_out(x, R):
