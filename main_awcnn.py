@@ -74,7 +74,7 @@ def main():
     hidden_dims = {'others':hidden_dims_others}
     lrs_FUN = {'cellcycle':1e-4, 'derisi':1e-4, 'eisen':1e-4, 'expr':1e-4, 'gasch1':1e-4, 'gasch2':1e-4, 'seq':1e-4, 'spo':1e-4}
     lrs_GO = {'cellcycle':1e-4, 'derisi':1e-4, 'eisen':1e-4, 'expr':1e-4, 'gasch1':1e-4, 'gasch2':1e-4, 'seq':1e-4, 'spo':1e-4}
-    lrs_others = {'diatoms':1e-5, 'enron':1e-5,'imclef07a':1e-5, 'imclef07d':1e-5, 'diatomsCNNDebug':1e-4, 'diatomsCNN':1e-6}
+    lrs_others = {'diatoms':1e-5, 'enron':1e-5,'imclef07a':1e-5, 'imclef07d':1e-5, 'diatomsCNNDebug':1e-4, 'diatomsCNN':2e-6}
     lrs = {'FUN':lrs_FUN, 'GO':lrs_GO, 'others':lrs_others}
     epochss_FUN = {'cellcycle':106, 'derisi':67, 'eisen':110, 'expr':20, 'gasch1':42, 'gasch2':123, 'seq':13, 'spo':115}
     epochss_GO = {'cellcycle':62, 'derisi':91, 'eisen':123, 'expr':70, 'gasch1':122, 'gasch2':177, 'seq':45, 'spo':103}
@@ -88,7 +88,7 @@ def main():
     non_lin = 'relu'
     hidden_dim = hidden_dims[ontology][data]
     lr = lrs[ontology][data]
-    weight_decay = 1e-5
+    weight_decay = 2e-6
     num_epochs = epochss[ontology][data]
     hyperparams = {'batch_size':batch_size, 'num_layers':num_layers, 'dropout':dropout, 'non_lin':non_lin, 'hidden_dim':hidden_dim, 'lr':lr, 'weight_decay':weight_decay}
 
