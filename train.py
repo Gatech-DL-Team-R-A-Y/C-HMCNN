@@ -27,6 +27,38 @@ from models.RNN import LSTMModel
 from visualization.viz import draw_loss_acc
 
 
+def reweight(cls_num_list, beta=0.9999):
+    """
+    Implement reweighting by effective numbers
+    :param cls_num_list: a list containing # of samples of each class
+    :param beta: hyper-parameter for reweighting, see paper for more details
+    :return:
+    """
+    # import pdb
+    # pdb.set_trace()
+    per_cls_weights = None
+    #############################################################################
+    # TODO: reweight each class by effective numbers                            #
+    #############################################################################
+    zeros = torch.zeros(len(cls_num_list))
+    per_cls_weights = torch.div(zeros + (1 - beta), zeros + 1 - torch.pow(beta, torch.FloatTensor(cls_num_list)))
+    ### replace sample class size 0 which cause inf with 0
+    ### per_cls_weights = torch.where(torch.isinf(per_cls_weights), torch.tensor(0.0), per_cls_weights)
+    # Find indices of infinite elements
+    inf_indices = torch.isinf(per_cls_weights)
+
+    # Remove infinite values by indexing
+    per_cls_weights = per_cls_weights[~inf_indices]
+
+    # normalize the weights
+    normalizer = len(cls_num_list) / per_cls_weights.sum()
+    per_cls_weights = per_cls_weights * normalizer
+    #############################################################################
+    #                              END OF YOUR CODE                             #
+    #############################################################################
+    return per_cls_weights
+
+
 def main():
     # Training settings
     parser = argparse.ArgumentParser(description='Train neural network')
@@ -48,6 +80,10 @@ def main():
                         help='weight decay')
     parser.add_argument('--non_lin', type=str, required=True,
                         help='non linearity function to be used in the hidden layers')
+    ############################# re-weighting beta ###########################################
+    parser.add_argument('--beta', type=float, default=0.999,
+                        help='reweighting hyperparameter')
+    ################################
 
     # Other parameters
     parser.add_argument('--device', type=int, default=0,
@@ -59,7 +95,7 @@ def main():
     parser.add_argument('--model', type=str, default='fc',
                         help='model')
     # for transformer only
-    parser.add_argument('--num_heads', type=int, default=5, help='number of heads for multi-head self-attention')
+    parser.add_argument('--num_heads', type=int, default=6, help='number of heads for multi-head self-attention')
 
     args = parser.parse_args()
     hyperparams = {'num_heads': args.num_heads, 'batch_size':args.batch_size, 'num_layers':args.num_layers, 'dropout':args.dropout, 'non_lin':args.non_lin, 'hidden_dim':args.hidden_dim, 'lr':args.lr, 'weight_decay':args.weight_decay}
@@ -83,7 +119,6 @@ def main():
     output_dims_GO = {'cellcycle':4122, 'church':4122, 'derisi':4116, 'eisen':3570, 'expr':4128, 'gasch1':4122, 'gasch2':4128, 'hom':4128, 'seq':4130, 'spo':4116}
     output_dims_others = {'amz':554, 'enrontext':56, 'diatoms':398,'enron':56, 'imclef07a': 96, 'imclef07d': 46, 'reuters':102}
     output_dims = {'FUN':output_dims_FUN, 'GO':output_dims_GO, 'others':output_dims_others}
-
 
     # Set seed
     seed = args.seed
@@ -153,7 +188,15 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                             batch_size=args.batch_size,
                                             shuffle=True)
+    ##################### add re-weighting ###########################################
+    # Calculate the class frequencies
+    class_counts = torch.sum(train.Y, dim=0)
 
+    # Convert class_counts to a list
+    cls_num_list = class_counts.tolist()
+    per_cls_weights = reweight(cls_num_list, beta=args.beta)
+
+    #####################
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
                                             batch_size=args.batch_size,
                                             shuffle=False)
@@ -187,7 +230,7 @@ def main():
 
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    criterion = nn.BCELoss()
+    criterion = nn.BCELoss(weight=per_cls_weights)
 
     # Set patience 
     patience, max_patience = 20, 20
