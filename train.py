@@ -195,7 +195,7 @@ def main():
 
     # Convert class_counts to a list
     cls_num_list = class_counts.tolist()
-    per_cls_weights = reweight(cls_num_list, beta=args.beta)
+    per_cls_weights = reweight(cls_num_list, beta=args.beta).to(device)
 
     #####################
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
