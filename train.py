@@ -24,6 +24,7 @@ from sklearn.metrics import f1_score, average_precision_score, precision_recall_
 from models.Transformer import TransformerModel
 from models.ConstrainedFFNNModel import ConstrainedFFNNModel, get_constr_out
 from models.RNN import LSTMModel
+from models.BertMultiLabelTransformer import BertMultiLabelTransformer
 from visualization.viz import draw_loss_acc
 
 
@@ -95,7 +96,7 @@ def main():
     parser.add_argument('--model', type=str, default='fc',
                         help='model')
     # for transformer only
-    parser.add_argument('--num_heads', type=int, default=6, help='number of heads for multi-head self-attention')
+    parser.add_argument('--num_heads', type=int, default=10, help='number of heads for multi-head self-attention')
 
     args = parser.parse_args()
     hyperparams = {'num_heads': args.num_heads, 'batch_size':args.batch_size, 'num_layers':args.num_layers, 'dropout':args.dropout, 'non_lin':args.non_lin, 'hidden_dim':args.hidden_dim, 'lr':args.lr, 'weight_decay':args.weight_decay}
@@ -227,6 +228,8 @@ def main():
         hidden_size = args.hidden_dim
         num_layers = hyperparams['num_layers']
         model = LSTMModel(input_size, output_size, hidden_size, num_layers, R)
+    elif 'bert' in args.model:
+        model = BertMultiLabelTransformer(num_labels=output_dims[ontology][data]+num_to_skip)
 
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -273,6 +276,8 @@ def main():
                 ########################### Transformer #############################################
                 output = model(x)
                 ########################################################################
+            elif 'bert' in args.model:
+                output = model(x)
 
             # MCLoss
             # Paper page 4-(3) - MCM_A
@@ -295,7 +300,7 @@ def main():
                 #        = ?
                 ########################### FC #############################################
                 loss = criterion(train_output[:, train.to_eval], labels[:, train.to_eval].double())
-            elif 'transformer' in args.model:
+            elif 'transformer' or ('bert' in args.model) in args.model:
                 ########################### Transformer #############################################
                 loss = criterion(train_output[:, train.to_eval], labels[:, train.to_eval].double())
             ########################### Loss Viz #########################################
@@ -326,12 +331,13 @@ def main():
         for i, (x, y) in enumerate(val_loader):
             x = x.to(device)
             y = y.to(device)
-            if ('fc' in args.model) or ('lstm' in args.model):
-                ######################## fc #############################
-                constrained_output = model(x.float())
-            elif 'transformer' in args.model:
-                ######################## transformer #############################
-                constrained_output = model(x)
+            with torch.no_grad():
+                if ('fc' in args.model) or ('lstm' in args.model):
+                    ######################## fc #############################
+                    constrained_output = model(x.float())
+                elif 'transformer' or ('bert' in args.model) in args.model:
+                    ######################## transformer #############################
+                    constrained_output = model(x)
 
             ############## BCE Loss for Viz ##############
             # MCLoss

@@ -58,3 +58,5 @@ Epoch: 2 - Loss: 0.2538, Accuracy train: 0.75610, Accuracy: 0.89912, Precision s
 Epoch: 3 - Loss: 0.2071, Accuracy train: 0.80778, Accuracy: 0.91667, Precision score: (0.43792)
 
 Epoch: 4 - Loss: 0.1753, Accuracy train: 0.83817, Accuracy: 0.91667, Precision score: (0.53744)
+
+Epoch: 0 - Loss: 0.4421, Accuracy train: 0.59787, Accuracy: 0.71491, Precision score: (0.35483)
